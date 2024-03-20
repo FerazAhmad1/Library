@@ -11,7 +11,10 @@ const { expressMiddleware } = require("@apollo/server/express4");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const userModel = require("../models/user.js");
+const User = require("../models/user.js");
+const Book = require("../models/book.js");
+const Cart = require("../models/cart.js");
+const CartItem = require("../models/cartItem.js");
 const sequelize = require("../utils/database.js");
 console.log(process.env.DB_NAME);
 async function startServer() {
@@ -100,6 +103,16 @@ async function startServer() {
   });
 
   await server.start();
+  Book.belongsTo(User, {
+    constraints: true,
+    onDelete: "CASCADE",
+    onUpdate: "CASCADE",
+  });
+  User.hasMany(Book);
+  User.hasOne(Cart);
+  Cart.belongsTo(User);
+  Book.belongsToMany(Cart, { through: CartItem });
+  Cart.belongsToMany(Book, { through: Cart });
   await sequelize.sync();
   app.use("/graphql", expressMiddleware(server));
   const port = 8000;
