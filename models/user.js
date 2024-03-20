@@ -1,5 +1,6 @@
 const { DataTypes, Sequelize } = require("sequelize");
 const sequelize = require("../utils/database.js");
+const bcrypt = require("bcrypt");
 
 const User = sequelize.define("user", {
   id: {
@@ -18,10 +19,21 @@ const User = sequelize.define("user", {
     allowNull: false,
     primaryKey: true,
   },
+  role: {
+    type: DataTypes.STRING,
+    defaultValue: "user",
+  },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
   },
 });
 
+User.addHook("beforeSave", "hashedpassword", async function (user, option) {
+  if (user.changed("password")) {
+    const hashedPassword = await bcrypt.hash(user.password, 12);
+    user.password = hashedPassword;
+  }
+  return;
+});
 module.exports = User;
