@@ -56,6 +56,80 @@ class user {
       throw error;
     }
   }
+
+  static async readUser(email) {
+    try {
+      const user = await userModel.findByPk(email);
+      if (!user) {
+        throw {
+          message: "User not found",
+        };
+      }
+      return {
+        success: true,
+        error: null,
+        user,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async updateUser(email, { name, password }) {
+    try {
+      if (!email) {
+        throw {
+          message: "email can not be null",
+        };
+      }
+
+      const user = await userModel.findByPk(email);
+      if (!user) {
+        throw {
+          message: "User not Found",
+        };
+      }
+
+      if (password) {
+        const passwordMatch = await bcrypt.compare(
+          password,
+          user.dataValues.password
+        );
+        if (passwordMatch) {
+          throw {
+            message: "New password must be different from the previous one",
+          };
+        }
+      }
+
+      await user.update({ name, password });
+      return {
+        success: true,
+        error: null,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+  static async deleteUser(email) {
+    try {
+      const user = await userModel.findByPk(email);
+      if (!user) {
+        return {
+          success: false,
+          error: "User not found",
+        };
+      }
+      await user.destroy();
+      return {
+        success: true,
+        error: null,
+      };
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      throw new Error("Error deleting user");
+    }
+  }
 }
 
 module.exports = user;

@@ -4,7 +4,7 @@ configDotenv({
   path: `${__dirname}/config.env`,
 });
 const userService = require("../services/user.js");
-
+const bookservice = require("../services/book.js");
 console.log(process.env.DIALECT, __dirname);
 const { ApolloServer } = require("@apollo/server");
 const { expressMiddleware } = require("@apollo/server/express4");
@@ -16,6 +16,7 @@ const Book = require("../models/book.js");
 const Cart = require("../models/cart.js");
 const CartItem = require("../models/cartItem.js");
 const sequelize = require("../utils/database.js");
+const user = require("../services/user.js");
 console.log(process.env.DB_NAME);
 async function startServer() {
   const app = express();
@@ -30,15 +31,20 @@ async function startServer() {
     console.log(token);
     return token;
   };
+  const authenticationMiddleware = () => {
+    console.log("i am authentication middleware");
+  };
   const server = new ApolloServer({
     typeDefs: `type user {
         id:ID!,
         email:String!,
         name:String!
     }
-    type Query {
-        getUsers:[user]
-    }
+      type readUserResponse {
+        success: Boolean! ,
+        error: String,
+        user:user
+      }
     type addUserResponse {
       success: Boolean!
       token: String
@@ -50,9 +56,36 @@ async function startServer() {
       token: String
       error: String
     }
+    type Book {
+      id:ID!,
+      title:String,
+      quantity:Int
+       error:String
+    }
+     type deleteresponse{
+      success:Boolean!
+      error:String
+     }
+    type searchBookresponse{
+      available:Boolean!
+      error:String
+      Book:[Book]
+    }
+
+    type Query {
+      getUsers:[user]
+      readBook(id:ID!):Book
+      readUser(email:String!):readUserResponse
+  }
     type Mutation {
-      addUser(name: String!, email: String!,password:String):addUserResponse
+      addUser(name: String!, email: String!,password:String!):addUserResponse
       loginHandler(email: String!,password:String):loginResponse
+      searchBook(id:ID,title:String,author:String): searchBookresponse
+      createbook(title:String!, author:String!,quantity:Int):Book
+      updateBook(id:ID!, title:String, author:String, quantity:Int ):Book
+      deleteBook(id:ID!):deleteresponse
+      updateUser(email:String!,name:String, password:String!):deleteresponse
+      deleteUser(email:String!):deleteresponse
     }
     `,
     resolvers: {
@@ -60,10 +93,37 @@ async function startServer() {
         getUsers: () => [
           { id: 1, email: "ferazkhan4@gmail.com", name: "Feraz" },
         ],
+        readBook: async (parent, args) => {
+          try {
+            const { id } = args;
+            const response = await bookservice.readBook();
+          } catch (error) {
+            return {
+              id: null,
+              title: null,
+              author: null,
+              error: error.message,
+            };
+          }
+        },
+        readUser: async (parent, args) => {
+          try {
+            const { email } = args;
+            const response = await userService.readUser(email);
+            return response;
+          } catch (error) {
+            return {
+              success: false,
+              error: error.message,
+              user: null,
+            };
+          }
+        },
       },
       Mutation: {
-        addUser: async (parent, args) => {
+        addUser: async (parent, args, context) => {
           try {
+            console.log("hhhhhhhhhhhhhhh", context, args);
             const { name, email, password } = args;
             const response = await userService.addUser(name, email, password);
             const data = response.dataValues;
@@ -98,6 +158,84 @@ async function startServer() {
             };
           }
         },
+        updateUser: async (parent, args) => {
+          try {
+            const { email, name, password } = args;
+            const response = await userService.updateUser(
+              email,
+              name,
+              password
+            );
+            return response;
+          } catch (error) {
+            return {
+              success: false,
+              error: error.message,
+            };
+          }
+        },
+        deleteUser: async (parent, args) => {
+          try {
+            const { email } = { args };
+            const response = await userService.deleteUser(email);
+            return response;
+          } catch (error) {
+            return {
+              success: false,
+              error: error.message,
+            };
+          }
+        },
+        createbook: async (parent, args) => {
+          try {
+            const { title, author, quantity } = args;
+            const response = await bookservice.createBook(
+              title,
+              author,
+              quantity
+            );
+            return response;
+          } catch (error) {
+            return {
+              id: null,
+              title: null,
+              author: null,
+              error: error.message,
+            };
+          }
+        },
+        updateBook: async (parent, args) => {
+          try {
+            const { id, title, author, quantity } = args;
+            const response = bookservice.updateBook(
+              id,
+              title,
+              author,
+              quantity
+            );
+            return response;
+          } catch (error) {
+            return {
+              id: null,
+              title: null,
+              author: null,
+              error: error.message,
+            };
+          }
+        },
+
+        deleteBook: async (parent, args) => {
+          try {
+            const { id } = args;
+            const response = await bookservice.deleteBook(id);
+            return response;
+          } catch (error) {
+            return {
+              success: "false",
+              error: error.message,
+            };
+          }
+        },
       },
     },
   });
@@ -109,12 +247,25 @@ async function startServer() {
     onUpdate: "CASCADE",
   });
   User.hasMany(Book);
+  Book.belongsTo(User);
   User.hasOne(Cart);
   Cart.belongsTo(User);
   Book.belongsToMany(Cart, { through: CartItem });
-  Cart.belongsToMany(Book, { through: Cart });
-  await sequelize.sync();
-  app.use("/graphql", expressMiddleware(server));
+  Cart.belongsToMany(Book, { through: CartItem });
+  await sequelize.sync({ force: true });
+
+  app.use(
+    "/graphql",
+    expressMiddleware(server, {
+      context: async ({ req, res }) => {
+        if (req.headers.authorization) {
+          const token = req.headers.authorization.split(" ")[1];
+          return { token };
+        }
+        return {};
+      },
+    })
+  );
   const port = 8000;
   app.listen(port, () => {
     console.log(`app is running on server ${8000}`);
