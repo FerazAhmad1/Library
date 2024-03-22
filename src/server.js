@@ -77,11 +77,12 @@ async function startServer() {
       getUsers:[user]
       readBook(id:ID!):Book
       readUser(email:String!):readUserResponse
+      searchBook(id:ID,title:String,author:String): searchBookresponse
   }
     type Mutation {
       addUser(name: String!, email: String!,password:String!):addUserResponse
       loginHandler(email: String!,password:String):loginResponse
-      searchBook(id:ID,title:String,author:String): searchBookresponse
+      
       createbook(title:String!, author:String!,quantity:Int):Book
       updateBook(id:ID!, title:String, author:String, quantity:Int ):Book
       deleteBook(id:ID!):deleteresponse
@@ -117,6 +118,25 @@ async function startServer() {
               success: false,
               error: error.message,
               user: null,
+            };
+          }
+        },
+        searchBook: async (parent, args, context) => {
+          try {
+            const authorize = await protector(context);
+            if (!authorize.user) {
+              throw {
+                message: "you are not authorize to perform this action",
+              };
+            }
+            const { id, title, author } = args;
+            const response = await bookservice.searchBook(id, title, author);
+            return response;
+          } catch (error) {
+            return {
+              available: false,
+              error: error.message,
+              Book: [null],
             };
           }
         },
