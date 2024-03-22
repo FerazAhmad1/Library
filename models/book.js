@@ -22,6 +22,10 @@ const Book = sequelize.define("Book", {
     allowNull: false,
     defaultValue: 0,
   },
+  price: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
 });
 
 module.exports = Book;

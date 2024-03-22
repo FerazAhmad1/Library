@@ -16,7 +16,7 @@ const Book = require("../models/book.js");
 const Cart = require("../models/cart.js");
 const CartItem = require("../models/cartItem.js");
 const sequelize = require("../utils/database.js");
-const user = require("../services/user.js");
+
 const { protector } = require("../utils/helper.js");
 console.log(process.env.DB_NAME);
 async function startServer() {

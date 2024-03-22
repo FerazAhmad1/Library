@@ -13,6 +13,19 @@ const CartItem = sequelize.define("cartItem", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  duration: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    validate: {
+      min: 1,
+      max: 3,
+    },
+  },
+  isBorrowed: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  },
 });
 
 module.exports = CartItem;

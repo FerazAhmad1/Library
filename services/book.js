@@ -23,7 +23,7 @@ class bookservice {
       if (books.length === 0) {
         return {
           available: false,
-          error: "we do nothave this book",
+          error: "we do not have this book",
           books: [],
         };
       }
