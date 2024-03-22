@@ -16,7 +16,10 @@ class bookservice {
       }
 
       console.log("wwwwwwwwwwwwwwwwwwwwwwwww", whereClause);
-      const books = await Book.findAll({ where: whereClause });
+      const book = await Book.findAll({ where: whereClause });
+      const books = book.map((data) => data.dataValues);
+
+      console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", books);
       if (books.length === 0) {
         return {
           available: false,
@@ -28,11 +31,10 @@ class bookservice {
       return {
         available: true,
         error: null,
-        books,
+        Book: books,
       };
     } catch (error) {
-      console.error("Error searching books:", error);
-      throw new Error("Error searching books");
+      throw error;
     }
   }
 

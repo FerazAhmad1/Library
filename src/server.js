@@ -136,7 +136,7 @@ async function startServer() {
             const author = args.author;
 
             const response = await bookservice.searchBook(id, title, author);
-            // return response;
+            return response;
           } catch (error) {
             return {
               available: false,
