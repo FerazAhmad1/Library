@@ -9,10 +9,10 @@ class bookservice {
         whereClause.id = id;
       }
       if (title) {
-        whereClause.title = title;
+        whereClause.title = { [Op.like]: `%${title}%` };
       }
       if (author) {
-        whereClause.author = author;
+        whereClause.author = { [Op.like]: `%${author}%` };
       }
 
       console.log("wwwwwwwwwwwwwwwwwwwwwwwww", whereClause);
