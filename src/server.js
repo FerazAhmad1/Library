@@ -32,9 +32,7 @@ async function startServer() {
     console.log(token);
     return token;
   };
-  const authenticationMiddleware = () => {
-    console.log("i am authentication middleware");
-  };
+
   const server = new ApolloServer({
     typeDefs: `type user {
         id:ID!,
@@ -129,9 +127,16 @@ async function startServer() {
                 message: "you are not authorize to perform this action",
               };
             }
-            const { id, title, author } = args;
+            console.log("ppppppppppppppppppppppp", args);
+
+            const id = args.id;
+
+            const title = args.title;
+
+            const author = args.author;
+
             const response = await bookservice.searchBook(id, title, author);
-            return response;
+            // return response;
           } catch (error) {
             return {
               available: false,

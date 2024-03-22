@@ -1,7 +1,7 @@
 const Book = require("../models/book.js");
 const { Op } = require("sequelize");
 class bookservice {
-  static async searchBook({ id, title, author }) {
+  static async searchBook(id, title, author) {
     try {
       let whereClause = {};
 
@@ -9,12 +9,13 @@ class bookservice {
         whereClause.id = id;
       }
       if (title) {
-        whereClause.title = { [Op.iLike]: `%${title}%` };
+        whereClause.title = title;
       }
       if (author) {
-        whereClause.author = { [Op.iLike]: `%${author}%` };
+        whereClause.author = author;
       }
 
+      console.log("wwwwwwwwwwwwwwwwwwwwwwwww", whereClause);
       const books = await Book.findAll({ where: whereClause });
       if (books.length === 0) {
         return {
