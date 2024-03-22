@@ -1,4 +1,5 @@
 const User = require("../models/user.js");
+const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 
 exports.protector = async ({ token }) => {

@@ -56,9 +56,9 @@ class bookservice {
     }
   }
 
-  static async createBook({ title, author, quantity }) {
+  static async createBook(title, author, quantity, admin) {
     try {
-      const newBook = await Book.create({ title, author, quantity });
+      const newBook = await admin.createBook({ title, author, quantity });
       return newBook;
     } catch (error) {
       console.error("Error creating book:", error);

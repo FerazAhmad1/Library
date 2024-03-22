@@ -17,6 +17,7 @@ const Cart = require("../models/cart.js");
 const CartItem = require("../models/cartItem.js");
 const sequelize = require("../utils/database.js");
 const user = require("../services/user.js");
+const { protector } = require("../utils/helper.js");
 console.log(process.env.DB_NAME);
 async function startServer() {
   const app = express();
@@ -186,13 +187,18 @@ async function startServer() {
             };
           }
         },
-        createbook: async (parent, args) => {
+        createbook: async (parent, args, context) => {
           try {
+            const authorize = await protector(context);
+            console.log("uuuuuuuuuuuuuuuuuuuuuuu", authorize.user.createBook);
+
             const { title, author, quantity } = args;
+            console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", title);
             const response = await bookservice.createBook(
               title,
               author,
-              quantity
+              quantity,
+              authorize.user
             );
             return response;
           } catch (error) {
@@ -252,7 +258,7 @@ async function startServer() {
   Cart.belongsTo(User);
   Book.belongsToMany(Cart, { through: CartItem });
   Cart.belongsToMany(Book, { through: CartItem });
-  await sequelize.sync({ force: true });
+  await sequelize.sync();
 
   app.use(
     "/graphql",
