@@ -40,3 +40,4 @@ UserBookItem.beforeUpdate((instance, options) => {
     throw new Error("Cannot update date of issue");
   }
 });
+module.exports = UserBookItem;

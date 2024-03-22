@@ -15,9 +15,14 @@ const User = require("../models/user.js");
 const Book = require("../models/book.js");
 const Cart = require("../models/cart.js");
 const CartItem = require("../models/cartItem.js");
+const Order = require("../models/order.js");
+const OrderItem = require("../models/orderItem.js");
+const Userbook = require("../models/userbook.js");
+const UserbookItem = require("../models/userBookItem.js");
 const sequelize = require("../utils/database.js");
 
 const { protector } = require("../utils/helper.js");
+const UserBook = require("../models/userbook.js");
 console.log(process.env.DB_NAME);
 async function startServer() {
   const app = express();
@@ -80,7 +85,6 @@ async function startServer() {
     type Mutation {
       addUser(name: String!, email: String!,password:String!):addUserResponse
       loginHandler(email: String!,password:String):loginResponse
-      
       createbook(title:String!, author:String!,quantity:Int):Book
       updateBook(id:ID!, title:String, author:String, quantity:Int ):Book
       deleteBook(id:ID!):deleteresponse
@@ -152,6 +156,7 @@ async function startServer() {
             console.log("hhhhhhhhhhhhhhh", context, args);
             const { name, email, password } = args;
             const response = await userService.addUser(name, email, password);
+            const newCart = await response.createCart();
             const data = response.dataValues;
             const { id } = data;
             const token = signInToken(id, email);
@@ -277,12 +282,22 @@ async function startServer() {
     onDelete: "CASCADE",
     onUpdate: "CASCADE",
   });
+
   User.hasMany(Book);
   Book.belongsTo(User);
   User.hasOne(Cart);
   Cart.belongsTo(User);
   Book.belongsToMany(Cart, { through: CartItem });
   Cart.belongsToMany(Book, { through: CartItem });
+  User.hasOne(Order);
+  Order.belongsTo(User);
+  Book.belongsToMany(Order, { through: OrderItem });
+  Order.belongsToMany(Book, { through: OrderItem });
+  User.hasOne(Userbook);
+  Userbook.belongsTo(User);
+  Book.belongsToMany(Userbook, { through: UserbookItem });
+  Userbook.belongsToMany(Book, { through: UserbookItem });
+
   await sequelize.sync();
 
   app.use(
