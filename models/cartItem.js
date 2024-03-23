@@ -12,13 +12,34 @@ const CartItem = sequelize.define("cartItem", {
   quantity: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    validate: {
+      notGreaterThanTen(value) {
+        if (value > 10) {
+          console.log("ffffffffffffffffffffffffffffffffffffffff", value);
+          throw new Error("Quantity cannot be greater than 10");
+        }
+      },
+    },
   },
   duration: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      min: 1,
-      max: 3,
+      isValidDuration(value) {
+        if (this.isBorrowed) {
+          if (!(parseInt(value) >= 1 && parseInt(value) <= 3)) {
+            throw new Error(
+              "Duration must be between 1 and 3 months when isBorrowed is true"
+            );
+          }
+        } else {
+          if (value !== "LIFETIME") {
+            throw new Error(
+              "Duration must be 'LIFETIME' when isBorrowed is false"
+            );
+          }
+        }
+      },
     },
   },
   isBorrowed: {

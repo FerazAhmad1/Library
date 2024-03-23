@@ -12,7 +12,7 @@ exports.protector = async ({ token }) => {
     let decoded;
     try {
       decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-      console.log(decoded);
+      console.log("Ffffffffff", decoded);
     } catch (error) {
       throw {
         message: "UnAthurorized user",
@@ -20,6 +20,7 @@ exports.protector = async ({ token }) => {
     }
 
     const user = await User.findByPk(decoded.email);
+
     if (!user) {
       throw {
         message: "The user belongs to this token does not exist",

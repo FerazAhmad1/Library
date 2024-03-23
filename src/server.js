@@ -5,6 +5,7 @@ configDotenv({
 });
 const userService = require("../services/user.js");
 const bookservice = require("../services/book.js");
+const orderservice = require("../services/order.js");
 console.log(process.env.DIALECT, __dirname);
 const { ApolloServer } = require("@apollo/server");
 const { expressMiddleware } = require("@apollo/server/express4");
@@ -21,8 +22,10 @@ const Userbook = require("../models/userbook.js");
 const UserbookItem = require("../models/userBookItem.js");
 const sequelize = require("../utils/database.js");
 
+const { promisify } = require("util");
+
 const { protector } = require("../utils/helper.js");
-const UserBook = require("../models/userbook.js");
+
 console.log(process.env.DB_NAME);
 async function startServer() {
   const app = express();
@@ -75,21 +78,34 @@ async function startServer() {
       error:String
       Book:[Book]
     }
-
-    type Query {
-      getUsers:[user]
-      readBook(id:ID!):Book
-      readUser(email:String!):readUserResponse
-      searchBook(id:ID,title:String,author:String): searchBookresponse
-  }
+     type cartItem{
+      id:ID
+      quantity:Int
+      isBorrowed:Boolean
+      duration:String
+      cartId:Int
+      BookId:Int
+     }
+    type addToCartresponse {
+      success:Boolean,
+      error:String,
+      cartItem:[cartItem]
+    }
+   type Query {
+    getUsers:[user]
+    readBook(id:ID!):Book
+    readUser(email:String!):readUserResponse
+    searchBook(id:ID,title:String,author:String): searchBookresponse
+   }
     type Mutation {
       addUser(name: String!, email: String!,password:String!):addUserResponse
       loginHandler(email: String!,password:String):loginResponse
-      createbook(title:String!, author:String!,quantity:Int):Book
+      createbook(title:String!, author:String!,quantity:Int,price:Int!):Book
       updateBook(id:ID!, title:String, author:String, quantity:Int ):Book
       deleteBook(id:ID!):deleteresponse
       updateUser(email:String!,name:String, password:String!):deleteresponse
       deleteUser(email:String!):deleteresponse
+      addToCart(id:ID!,quantity:Int!,isBorrowed:Boolean!,duration:String!):addToCartresponse
     }
     `,
     resolvers: {
@@ -222,12 +238,13 @@ async function startServer() {
             const authorize = await protector(context);
             console.log("uuuuuuuuuuuuuuuuuuuuuuu", authorize.user.createBook);
 
-            const { title, author, quantity } = args;
+            const { title, author, quantity, price } = args;
             console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", title);
             const response = await bookservice.createBook(
               title,
               author,
               quantity,
+              price,
               authorize.user
             );
             return response;
@@ -272,6 +289,32 @@ async function startServer() {
             };
           }
         },
+
+        addToCart: async (parent, args, context) => {
+          const { id, quantity, isBorrowed, duration } = args;
+          try {
+            const authorize = await protector(context);
+            console.log(
+              "hhhhhoooooooooooooooooooooohhhhh",
+              authorize.user.getCart
+            );
+
+            const response = await orderservice.addToCart(
+              id,
+              quantity,
+              isBorrowed,
+              duration,
+              authorize.user
+            );
+            return response;
+          } catch (error) {
+            return {
+              succees: false,
+              cartItem: null,
+              error: error,
+            };
+          }
+        },
       },
     },
   });
@@ -306,6 +349,7 @@ async function startServer() {
       context: async ({ req, res }) => {
         if (req.headers.authorization) {
           const token = req.headers.authorization.split(" ")[1];
+
           return { token };
         }
         return {};
