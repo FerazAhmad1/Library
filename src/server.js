@@ -103,6 +103,7 @@ async function startServer() {
       updateUser(email:String!,name:String, password:String!):deleteresponse
       deleteUser(email:String!):deleteresponse
       addToCart(id:ID!,quantity:Int!,isBorrowed:Boolean!,duration:String!):addToCartresponse
+      placeOrder:addToCartresponse
     }
     `,
     resolvers: {
@@ -308,6 +309,12 @@ async function startServer() {
               error: error,
             };
           }
+        },
+        placeOrder: async (_, __, context) => {
+          try {
+            const authorize = await protector(context);
+            orderservice.placeOrder(authorize.user);
+          } catch (error) {}
         },
       },
     },
