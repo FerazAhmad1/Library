@@ -14,7 +14,10 @@ const OrderItem = sequelize.define("orderItem", {
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
-
+  total: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
   orderStatus: {
     type: DataTypes.ENUM("pending", "processing", "shipped"),
     allowNull: false,
