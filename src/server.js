@@ -78,18 +78,15 @@ async function startServer() {
       error:String
       Book:[Book]
     }
-     type cartItem{
+    type cartItem{
       id:ID
       quantity:Int
-      isBorrowed:Boolean
-      duration:String
-      cartId:Int
-      BookId:Int
-     }
+      title:String
+    }
     type addToCartresponse {
       success:Boolean,
       error:String,
-      cartItem:[cartItem]
+      cartItem:cartItem
     }
    type Query {
     getUsers:[user]
@@ -236,10 +233,7 @@ async function startServer() {
         createbook: async (parent, args, context) => {
           try {
             const authorize = await protector(context);
-            console.log("uuuuuuuuuuuuuuuuuuuuuuu", authorize.user.createBook);
-
             const { title, author, quantity, price } = args;
-            console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", title);
             const response = await bookservice.createBook(
               title,
               author,
