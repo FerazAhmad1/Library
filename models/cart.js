@@ -9,6 +9,11 @@ const Cart = sequelize.define("cart", {
     unique: true,
     primaryKey: true,
   },
+  order: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 });
 
 module.exports = Cart;

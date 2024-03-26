@@ -17,7 +17,7 @@ const Book = require("../models/book.js");
 const Cart = require("../models/cart.js");
 const CartItem = require("../models/cartItem.js");
 const Order = require("../models/order.js");
-const OrderItem = require("../models/orderItem.js");
+
 const Userbook = require("../models/userbook.js");
 const UserbookItem = require("../models/userBookItem.js");
 const sequelize = require("../utils/database.js");
@@ -64,7 +64,7 @@ async function startServer() {
       error: String
     }
     type Book {
-      id:ID!,
+      id:ID,
       title:String,
       quantity:Int
        error:String
@@ -170,7 +170,7 @@ async function startServer() {
             console.log("hhhhhhhhhhhhhhh", context, args);
             const { name, email, password } = args;
             const response = await userService.addUser(name, email, password);
-            const newCart = await response.createCart();
+            const newCart = await response.createCart({ order: false });
             const data = response.dataValues;
             const { id } = data;
             const token = signInToken(id, email);
@@ -234,6 +234,9 @@ async function startServer() {
         createbook: async (parent, args, context) => {
           try {
             const authorize = await protector(context);
+            if (authorize.user && authorize.user.dataValues.role !== "admin") {
+              throw "you are not authorize to perform this action";
+            }
             const { title, author, quantity, price } = args;
             const response = await bookservice.createBook(
               title,
@@ -248,7 +251,7 @@ async function startServer() {
               id: null,
               title: null,
               author: null,
-              error: error.message,
+              error: error,
             };
           }
         },
@@ -335,8 +338,6 @@ async function startServer() {
   Cart.belongsToMany(Book, { through: CartItem });
   User.hasOne(Order);
   Order.belongsTo(User);
-  Book.belongsToMany(Order, { through: OrderItem });
-  Order.belongsToMany(Book, { through: OrderItem });
   User.hasOne(Userbook);
   Userbook.belongsTo(User);
   Book.belongsToMany(Userbook, { through: UserbookItem });
