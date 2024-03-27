@@ -103,6 +103,7 @@ async function startServer() {
       updateUser(email:String!,name:String, password:String!):deleteresponse
       deleteUser(email:String!):deleteresponse
       addToCart(id:ID!,quantity:Int!,isBorrowed:Boolean!,duration:String!):addToCartresponse
+      decreaseQuantity(id:ID!,quantity:Int!):Book
       placeOrder:addToCartresponse
     }
     `,
@@ -289,6 +290,7 @@ async function startServer() {
         },
 
         addToCart: async (parent, args, context) => {
+          s;
           const { id, quantity, isBorrowed, duration } = args;
           try {
             const authorize = await protector(context);
@@ -318,6 +320,26 @@ async function startServer() {
             const authorize = await protector(context);
             orderservice.placeOrder(authorize.user);
           } catch (error) {}
+        },
+
+        decreaseQuantity: async (parent, args, context) => {
+          const { id, quantity } = args;
+          try {
+            const authorize = await protector(context);
+
+            const response = await orderservice.decreaseQuantity(
+              id,
+              quantity,
+              authorize.user
+            );
+          } catch (error) {
+            return {
+              id,
+              quantity,
+              title: null,
+              error: error,
+            };
+          }
         },
       },
     },

@@ -78,6 +78,38 @@ class orderservice {
     const existingbook = await cart.getBooks();
     // console.log("vvvvvvvvvvvvv", existingbook[0].cartItem);
   }
+
+  static async decreaseQuantity(id, qty, user) {
+    let newQuantity;
+    try {
+      const cart = await user.getCart();
+      const book = await cart.getBooks({ where: { id } });
+      // console.log(await cart.setBooks(book, { through: { quantity: 1 } }));
+      if (book.length === 0) {
+        throw "this book does not prsent in your cart";
+      }
+      let cartBook = book[0].dataValues.cartItem.dataValues;
+      const { quantity, title } = cartBook;
+
+      if (qty >= quantity) {
+        newQuantity = 0;
+      } else {
+        newQuantity = quantity - qty;
+      }
+      const response = await cart.setBooks(book, {
+        through: { quantity: newQuantity },
+      });
+
+      return {
+        id,
+        title,
+        quantity: newQuantity,
+        error: null,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = orderservice;
