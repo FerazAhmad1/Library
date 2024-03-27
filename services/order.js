@@ -110,6 +110,37 @@ class orderservice {
       throw error;
     }
   }
+
+  static async increaseQuantity(id, qty, user) {
+    let newQuantity;
+    try {
+      const cart = await user.getCart();
+      const book = await cart.getBooks({ where: { id } });
+      if (book.length === 0) {
+        throw "this book does not belongs to your cart.First add to cart";
+      }
+      let cartBook = book[0].dataValues.cartItem.dataValues;
+      const { quantity, title } = cartBook;
+
+      if (quantity >= 10) {
+        throw "you can not add more book";
+      }
+      if (quantity + qty >= 10) {
+        newQuantity = 10;
+      } else {
+        newQuantity = quantity + qty;
+      }
+      await cart.setBooks(book, { through: { quantity } });
+      return {
+        id,
+        title,
+        quantity: newQuantity,
+        error: null,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = orderservice;

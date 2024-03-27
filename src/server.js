@@ -104,6 +104,7 @@ async function startServer() {
       deleteUser(email:String!):deleteresponse
       addToCart(id:ID!,quantity:Int!,isBorrowed:Boolean!,duration:String!):addToCartresponse
       decreaseQuantity(id:ID!,quantity:Int!):Book
+      increaseQuantity(id:ID!,quantity:Int!):Book
       placeOrder:addToCartresponse
     }
     `,
@@ -338,6 +339,24 @@ async function startServer() {
               quantity,
               title: null,
               error: error,
+            };
+          }
+        },
+        increaseQuantity: async (parent, args, context) => {
+          const { id, quantity } = args;
+          try {
+            const authorize = await protector(context);
+            const response = await orderservice.increaseQuantity(
+              id,
+              quantity,
+              authorize.user
+            );
+          } catch (error) {
+            return {
+              error: error,
+              id,
+              title: null,
+              quantity: null,
             };
           }
         },
