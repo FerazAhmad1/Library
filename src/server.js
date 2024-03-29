@@ -172,7 +172,11 @@ async function startServer() {
             console.log("hhhhhhhhhhhhhhh", context, args);
             const { name, email, password } = args;
             const response = await userService.addUser(name, email, password);
-            const newCart = await response.createCart({ order: false });
+            console.log("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR", response);
+            const newCart = await response.createCart({
+              order: false,
+              userEmail: response.dataValues.email,
+            });
             const data = response.dataValues;
             const { id } = data;
             const token = signInToken(id, email);
@@ -237,7 +241,7 @@ async function startServer() {
           try {
             const authorize = await protector(context);
             if (authorize.user && authorize.user.dataValues.role !== "admin") {
-              throw "you are not authorize to perform this action";
+              throw { message: "you are not authorize to perform this action" };
             }
             const { title, author, quantity, price } = args;
             const response = await bookservice.createBook(
@@ -253,7 +257,7 @@ async function startServer() {
               id: null,
               title: null,
               author: null,
-              error: error,
+              error: error.message,
             };
           }
         },
@@ -291,7 +295,6 @@ async function startServer() {
         },
 
         addToCart: async (parent, args, context) => {
-          s;
           const { id, quantity, isBorrowed, duration } = args;
           try {
             const authorize = await protector(context);
@@ -373,7 +376,7 @@ async function startServer() {
 
   User.hasMany(Book);
   Book.belongsTo(User);
-  User.hasOne(Cart);
+  User.hasMany(Cart);
   Cart.belongsTo(User);
   Book.belongsToMany(Cart, { through: CartItem });
   Cart.belongsToMany(Book, { through: CartItem });

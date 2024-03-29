@@ -10,9 +10,8 @@ const Order = sequelize.define("order", {
     index: true,
   },
   orderDate: {
-    type: DataTypes.DATE,
+    type: DataTypes.BIGINT,
     allowNull: false,
-    defaultValue: DataTypes.NOW,
   },
   orderStatus: {
     type: DataTypes.ENUM("pending", "processing", "shipped"),
