@@ -119,7 +119,10 @@ async function startServer() {
         readBook: async (parent, args) => {
           try {
             const { id } = args;
-            const response = await bookservice.readBook();
+            const response = await bookservice.readBook(id);
+            console.log(response, "ddddddddddddddddddddddddddddddddddd");
+            const { title, author, quantity, price } = response.book.dataValues;
+            return { id, title, author, quantity, price, error: null };
           } catch (error) {
             return {
               id: null,

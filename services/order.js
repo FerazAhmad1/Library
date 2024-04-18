@@ -8,6 +8,7 @@ const Order = require("../models/order.js");
 class orderservice {
   static async addToCart(id, quantity, isBorrowed, duration, user) {
     try {
+      let cart;
       let existingbook;
       const available = await Book.findByPk(id);
       if (!available) {
@@ -19,9 +20,18 @@ class orderservice {
       }
 
       const carts = await user.getCarts({ where: { order: false } });
-      console.log(carts);
-
-      const cart = carts[0];
+      if (carts.length === 0) {
+        cart = await user.createCart({
+          order: false,
+          userEmail: user.dataValues.email,
+        });
+        console.log(
+          "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+          check
+        );
+      } else {
+        cart = carts[0];
+      }
 
       console.log(cart.getBooks, "DDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
 
