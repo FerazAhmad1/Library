@@ -3,10 +3,13 @@ const { configDotenv } = require("dotenv");
 configDotenv({
   path: `${__dirname}/config.env`,
 });
+console.log(process.env.DIALECT, __dirname);
+console.log(process.env.JWT_SECRET);
+console.log(process.env.USER);
 const userService = require("../services/user.js");
 const bookservice = require("../services/book.js");
 const orderservice = require("../services/order.js");
-console.log(process.env.DIALECT, __dirname);
+
 const { ApolloServer } = require("@apollo/server");
 const { expressMiddleware } = require("@apollo/server/express4");
 const bodyParser = require("body-parser");
