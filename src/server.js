@@ -69,7 +69,9 @@ async function startServer() {
     type Book {
       id:ID,
       title:String,
+      author:String
       quantity:Int
+      price:Int
        error:String
     }
      type deleteresponse{
@@ -85,6 +87,22 @@ async function startServer() {
       id:ID
       quantity:Int
       title:String
+      
+    }
+    type cartBook{
+      id:ID!
+      title:String!
+      price:Int!
+      quantity:Int!
+      isBorrowed:Boolean!
+      duration:String!
+      total:Int!
+      author:String!
+    }
+    type cart {
+      grandTotal:Int
+      cartItem:[cartBook]
+
     }
     type addToCartresponse {
       success:Boolean,
@@ -95,7 +113,8 @@ async function startServer() {
     getUsers:[user]
     readBook(id:ID!):Book
     readUser(email:String!):readUserResponse
-    searchBook(id:ID,title:String,author:String): searchBookresponse
+    readCart:cart
+    
    }
     type Mutation {
       addUser(name: String!, email: String!,password:String!):addUserResponse
@@ -108,6 +127,7 @@ async function startServer() {
       addToCart(id:ID!,quantity:Int!,isBorrowed:Boolean!,duration:String!):addToCartresponse
       decreaseQuantity(id:ID!,quantity:Int!):Book
       increaseQuantity(id:ID!,quantity:Int!):Book
+      searchBook(query:String!): searchBookresponse
       placeOrder:addToCartresponse
     }
     `,
@@ -132,6 +152,12 @@ async function startServer() {
             };
           }
         },
+        readCart: async (parent, args, context) => {
+          const authorize = await protector(context);
+          console.log(authorize.user, "fffffffffffffbbbbbbbbbbbbbbb");
+          const response = await orderservice.cart(authorize.user);
+          return response;
+        },
         readUser: async (parent, args) => {
           try {
             const { email } = args;
@@ -142,32 +168,6 @@ async function startServer() {
               success: false,
               error: error.message,
               user: null,
-            };
-          }
-        },
-        searchBook: async (parent, args, context) => {
-          try {
-            const authorize = await protector(context);
-            if (!authorize.user) {
-              throw {
-                message: "you are not authorize to perform this action",
-              };
-            }
-            console.log("ppppppppppppppppppppppp", args);
-
-            const id = args.id;
-
-            const title = args.title;
-
-            const author = args.author;
-
-            const response = await bookservice.searchBook(id, title, author);
-            return response;
-          } catch (error) {
-            return {
-              available: false,
-              error: error.message,
-              Book: [null],
             };
           }
         },
@@ -199,6 +199,28 @@ async function startServer() {
               token: null,
               error: error.message,
               user: null,
+            };
+          }
+        },
+        searchBook: async (parent, args, context) => {
+          try {
+            const authorize = await protector(context);
+            if (!authorize.user) {
+              throw {
+                message: "you are not authorize to perform this action",
+              };
+            }
+            console.log("ppppppppppppppppppppppp", args);
+
+            const { query } = args;
+
+            const response = await bookservice.searchBook(query);
+            return response;
+          } catch (error) {
+            return {
+              available: false,
+              error: error.message,
+              Book: [null],
             };
           }
         },
@@ -301,13 +323,11 @@ async function startServer() {
         },
 
         addToCart: async (parent, args, context) => {
+          console.log("AAAAAAAAAAAAAAAAAAAAAAA", args);
           const { id, quantity, isBorrowed, duration } = args;
+
           try {
             const authorize = await protector(context);
-            console.log(
-              "hhhhhoooooooooooooooooooooohhhhh",
-              authorize.user.getCart
-            );
 
             const response = await orderservice.addToCart(
               id,
@@ -321,7 +341,7 @@ async function startServer() {
             return {
               succees: false,
               cartItem: null,
-              error: error,
+              error: error.message,
             };
           }
         },

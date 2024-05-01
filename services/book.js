@@ -1,22 +1,16 @@
 const Book = require("../models/book.js");
 const { Op } = require("sequelize");
 class bookservice {
-  static async searchBook(id, title, author) {
+  static async searchBook(query) {
     try {
-      let whereClause = {};
-
-      if (id) {
-        whereClause.id = id;
-      }
-      if (title) {
-        whereClause.title = { [Op.like]: `%${title}%` };
-      }
-      if (author) {
-        whereClause.author = { [Op.like]: `%${author}%` };
-      }
-
-      console.log("wwwwwwwwwwwwwwwwwwwwwwwww", whereClause);
-      const book = await Book.findAll({ where: whereClause });
+      const book = await Book.findAll({
+        where: {
+          [Op.or]: [
+            { title: { [Op.like]: `%${query}%` } },
+            { author: { [Op.like]: `%${query}%` } },
+          ],
+        },
+      });
       const books = book.map((data) => data.dataValues);
 
       console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", books);
