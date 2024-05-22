@@ -1,7 +1,7 @@
 const express = require("express");
 const { configDotenv } = require("dotenv");
 configDotenv({
-  path: `${__dirname}/config.env`,
+  path: `${__dirname}/../config.env`,
 });
 console.log(process.env.DIALECT, __dirname);
 console.log(process.env.JWT_SECRET);
