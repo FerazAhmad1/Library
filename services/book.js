@@ -52,7 +52,17 @@ class bookservice {
       throw new Error("Error reading book");
     }
   }
-
+  static async getAllBooks() {
+    try {
+      const response = await Book.findAll();
+      const Books = response.map((book) => book.dataValues);
+      return {
+        Books: Books,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
   static async createBook(title, author, quantity, price, admin) {
     try {
       const newBook = await admin.createBook({

@@ -26,6 +26,31 @@ const UserbookItem = require("../models/userBookItem.js");
 const sequelize = require("../utils/database.js");
 
 const { promisify } = require("util");
+const obj = {
+  grandTotal: 700,
+  cartItem: [
+    {
+      id: 1,
+      isBorrowed: false,
+      quantity: 1,
+      duration: "LIFETIME",
+      title: "Heat and mass transfer",
+      author: "cengel",
+      price: 640,
+      total: 640,
+    },
+    {
+      id: 3,
+      isBorrowed: true,
+      quantity: 1,
+      duration: "2",
+      title: "Heat and mass transfer",
+      author: "cengel",
+      price: 640,
+      total: 60,
+    },
+  ],
+};
 
 const { protector } = require("../utils/helper.js");
 
@@ -67,12 +92,18 @@ async function startServer() {
       error: String
     }
     type Book {
-      id:ID,
-      title:String,
-      author:String
-      quantity:Int
-      price:Int
-       error:String
+      id:ID!,
+      title:String!
+      author:String!
+      quantity:Int!
+      price:Int! 
+    }
+    type readBook {
+      book:Book
+      error:String
+    }
+    type allBooks{
+      Books:[Book]
     }
      type deleteresponse{
       success:Boolean!
@@ -90,7 +121,7 @@ async function startServer() {
       
     }
     type cartBook{
-      id:ID!
+      id:String!
       title:String!
       price:Int!
       quantity:Int!
@@ -109,13 +140,19 @@ async function startServer() {
       error:String,
       cartItem:cartItem
     }
+    type updateCart {
+      success: Boolean!
+      error:String
+     }
    type Query {
     getUsers:[user]
-    readBook(id:ID!):Book
+    readBook(id:ID!):readBook
+    getAllBooks:allBooks
     readUser(email:String!):readUserResponse
     readCart:cart
     
    }
+   
     type Mutation {
       addUser(name: String!, email: String!,password:String!):addUserResponse
       loginHandler(email: String!,password:String):loginResponse
@@ -129,6 +166,7 @@ async function startServer() {
       increaseQuantity(id:ID!,quantity:Int!):Book
       searchBook(query:String!): searchBookresponse
       placeOrder:addToCartresponse
+      updateCart(id:ID!,isBorrowed:Boolean,quantity:Int,duration:Int):updateCart
     }
     `,
     resolvers: {
@@ -142,7 +180,9 @@ async function startServer() {
             const response = await bookservice.readBook(id);
             console.log(response, "ddddddddddddddddddddddddddddddddddd");
             const { title, author, quantity, price } = response.book.dataValues;
-            return { id, title, author, quantity, price, error: null };
+            return {
+              book: { id, title, author, quantity, price, error: null },
+            };
           } catch (error) {
             return {
               id: null,
@@ -152,11 +192,28 @@ async function startServer() {
             };
           }
         },
+        getAllBooks: async (parent, args, context) => {
+          try {
+            console.log("uuuuuuuuyyyyyyyyyyyyyy");
+            await protector(context);
+            const response = await bookservice.getAllBooks();
+            console.log(response);
+            return response;
+          } catch (error) {
+            console.log(error);
+          }
+        },
+
         readCart: async (parent, args, context) => {
-          const authorize = await protector(context);
-          console.log(authorize.user, "fffffffffffffbbbbbbbbbbbbbbb");
-          const response = await orderservice.cart(authorize.user);
-          return response;
+          try {
+            const authorize = await protector(context);
+            console.log(authorize.user, "fffffffffffffbbbbbbbbbbbbbbb");
+            const response = await orderservice.cart(authorize.user);
+            console.log("pppppppppppppppppppppppp", response);
+            return response;
+          } catch (error) {
+            console.log(error);
+          }
         },
         readUser: async (parent, args) => {
           try {
@@ -324,8 +381,8 @@ async function startServer() {
 
         addToCart: async (parent, args, context) => {
           console.log("AAAAAAAAAAAAAAAAAAAAAAA", args);
-          const { id, quantity, isBorrowed, duration } = args;
-
+          const { id, isBorrowed, duration } = args;
+          const quantity = 1;
           try {
             const authorize = await protector(context);
 
@@ -339,7 +396,7 @@ async function startServer() {
             return response;
           } catch (error) {
             return {
-              succees: false,
+              success: false,
               cartItem: null,
               error: error.message,
             };
@@ -369,6 +426,28 @@ async function startServer() {
               title: null,
               error: error,
             };
+          }
+        },
+        updateCart: async (parent, args, context) => {
+          try {
+            const authorize = await protector(context);
+            const {
+              id,
+              quantity = null,
+              isBorrowed = null,
+              duration = null,
+            } = args;
+            const response = await orderservice.updateCart(
+              id,
+              quantity,
+              isBorrowed,
+              duration,
+              authorize.user
+            );
+
+            return response;
+          } catch (error) {
+            console.log(error);
           }
         },
         increaseQuantity: async (parent, args, context) => {

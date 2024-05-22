@@ -6,9 +6,15 @@ const { Op, where } = require("sequelize");
 const sequelize = require("../utils/database.js");
 const Order = require("../models/order.js");
 const { promise } = require("bcrypt/promises.js");
+const { addNewItem } = require("../utils/helper.js");
 class orderservice {
-  static async addToCart(id, quantity, isBorrowed, duration, user) {
+  static async addToCart(id, quantity = 1, isBorrowed, duration, user) {
     try {
+      if (isBorrowed && quantity > 1) {
+        throw {
+          message: "you can not borrow more than one same book",
+        };
+      }
       let cart;
       let existingbook;
       const available = await Book.findByPk(id);
@@ -23,51 +29,160 @@ class orderservice {
       const carts = await user.getCarts({
         where: { order: false },
       });
+
       if (carts.length === 0) {
         cart = await user.createCart({
           order: false,
           userEmail: user.dataValues.email,
         });
+        const response = await addNewItem(
+          cartId,
+          id,
+          quantity,
+          isBorrowed,
+          duration
+        );
       } else {
         cart = carts[0];
       }
+      const cartId = cart.dataValues.id;
+      const existingItem = await CartItem.findAll({
+        where: { cartId, BookId: id, isBorrowed },
+      });
 
-      existingbook = await cart.getBooks({ where: { id, isBorrowed } });
-      let newQuantity = quantity;
-      console.log(existingbook, id);
-      if (existingbook.length !== 0) {
-        let book = existingbook[0];
-        newQuantity = book.cartItem.dataValues.quantity * 1 + quantity * 1;
+      if (existingItem.length === 0) {
+        const response = await addNewItem(
+          cartId,
+          id,
+          quantity,
+          isBorrowed,
+          duration
+        );
+
+        const { title } = availableBook;
+        return {
+          success: true,
+          error: null,
+          cartItem: {
+            id,
+            quantity: 1,
+            title,
+          },
+        };
+      } else {
+        throw {
+          message: "this book is already in your cart",
+        };
       }
 
-      let { title } = availableBook;
-      console.log(
-        "TTTTTTTTTTTTTTTTTTTTT",
-        "GGGGGGGGGGGGGGGGGGGG",
-        title,
-        cart.addBook,
-        duration
-      );
+      // let newQuantity = quantity;
+      // console.log(existingbook, id);
+      // if (existingbook.length === 0) {
+      //   let book = existingbook[0];
+      //   newQuantity = book.cartItem.dataValues.quantity * 1 + quantity * 1;
+      // }
 
-      const response = await cart.addBook(available, {
-        through: { quantity: newQuantity, isBorrowed, duration },
-      });
-      console.log(
-        "<<<<<<<<<<<<<<<<<<<<<<<<",
-        response,
-        ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-      );
-      return {
-        success: true,
-        cartItem: {
-          id,
-          quantity: newQuantity,
-          title,
-        },
-        error: null,
-      };
+      // let { title } = availableBook;
+      // console.log(
+      //   "TTTTTTTTTTTTTTTTTTTTT",
+      //   "GGGGGGGGGGGGGGGGGGGG",
+      //   title,
+      //   cart.addBook,
+      //   duration
+      // );
+
+      // const response = await cart.addBook(available, {
+      //   through: { quantity: newQuantity, isBorrowed, duration },
+      // });
+      // console.log(
+      //   "<<<<<<<<<<<<<<<<<<<<<<<<",
+      //   response,
+      //   ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+      // );
+      // return {
+      //   success: true,
+      //   cartItem: {
+      //     id,
+      //     quantity: newQuantity,
+      //     title,
+      //   },
+      //   error: null,
+      // };
     } catch (error) {
       console.log("CCCCCCCCCCCCCCCCCCCCC", error);
+      throw error;
+    }
+  }
+
+  static async updateCart(id, quantity, isBorrowed, duration, user) {
+    try {
+      console.log("AAAAAAAAAAAAAAAAAAAAAAA", user);
+      const regex = /(\d+)(\D+)/;
+      let buyType;
+      const [_, BookId, borrow] = id.match(regex);
+
+      if (borrow === "true") {
+        buyType = true;
+      } else {
+        buyType = false;
+      }
+      const carts = await user.getCarts({ where: { order: false } });
+      console.log("AAAAAAAAAAAAAAAAAAAAAAAAA", carts);
+      if (carts.length === 0)
+        throw { message: "you need add this product in cart first" };
+      const cart = carts[0];
+      const cartId = cart.dataValues.id;
+      const whereClause = {
+        where: { cartId, isBorrowed: buyType, BookId },
+      };
+      const cartItem = await CartItem.findAll(whereClause);
+      if (cartItem.length === 0)
+        throw { message: "This item does not belongs to cart" };
+      if (isBorrowed !== null) {
+        const response = await CartItem.update({ isBorrowed }, whereClause);
+        if (response.length !== 0) {
+          return {
+            success: true,
+            error: null,
+          };
+        } else {
+          return {
+            success: false,
+            error: null,
+          };
+        }
+      } else if (duration !== null) {
+        const response = await CartItem.update(
+          { duration: duration + "" },
+          whereClause
+        );
+        if (response.length !== 0) {
+          return {
+            success: true,
+            error: null,
+          };
+        } else {
+          return {
+            success: false,
+            error: null,
+          };
+        }
+        return response;
+      } else if (quantity !== null && quantity <= 10) {
+        const response = await CartItem.update({ quantity }, whereClause);
+        if (response.length !== 0) {
+          return {
+            success: true,
+            error: null,
+          };
+        } else {
+          return {
+            success: false,
+            error: null,
+          };
+        }
+      }
+    } catch (error) {
       throw error;
     }
   }
@@ -108,8 +223,10 @@ class orderservice {
         let grandTotal = 0;
         const bookdata = await Promise.all(
           cartItems.map(async (data) => {
+            let IdType;
             let total;
             const item = data.dataValues;
+            console.log("ggggggggggggggggggggggggggggg", item);
             const { BookId: id, quantity, duration, isBorrowed } = item;
             const book = await Book.findByPk(id, {
               attributes: ["title", "author", "price"],
@@ -121,12 +238,14 @@ class orderservice {
             } = book.dataValues;
             if (isBorrowed) {
               total = quantity * 30 * duration;
+              IdType = id + "true";
             } else {
               total = price * quantity;
+              IdType = id + "false";
             }
             grandTotal += total;
             const result = {
-              id,
+              id: IdType,
               isBorrowed,
               quantity,
               duration,
@@ -142,6 +261,7 @@ class orderservice {
         return { grandTotal, cartItem: bookdata };
       };
       const books = await responseMaker(cartItems);
+      console.log("TTTTTTTTTTTTTTTTTTTTTTTTTTTTT", books);
 
       return books;
     } catch (error) {
